@@ -1,0 +1,9 @@
+{
+  "name": "my-discord-lib",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "dependencies": {
+    "ws": "^8.0.0",
+    "node-fetch": "^2.6.7"
+  }
+}
