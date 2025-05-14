@@ -1,5 +1,7 @@
 const WebSocket = require('ws');
 const { getGuild } = require('./rest');
+const Message = require('./objects/message');
+const Guild = require('./objects/guild');
 
 function startGateway(token, intents, client) {
   const ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
@@ -10,7 +12,7 @@ function startGateway(token, intents, client) {
   ws.on('open', () => console.log('[Gateway] Connecting...'));
 
   ws.on('message', (data) => {
-    const payload = JSON.parse(data);
+    const payload = JSON.parse(data.toString());
     const { t, s, op, d } = payload;
 
     switch (op) {
@@ -37,41 +39,7 @@ function startGateway(token, intents, client) {
           client.user = d.user;
           client.emit('ready');
         } else if (t === 'MESSAGE_CREATE') {
-          const guildId = d.guild_id;
-
-            const message = {
-            id: d.id,
-            content: d.content,
-            channelId: d.channel_id,
-            author: d.author,
-            raw: d,
-            reply: (msg) => {
-              return new Promise((resolve, reject) => {
-              client.sendMessage(d.channel_id, msg)
-                .then((response) => resolve(response.id))
-                .catch(reject);
-              });
-            },
-
-            // 👇 Dynamic getter for message.guild
-            get guild() {
-              if (!guildId) return null;
-              if (!client._guildCache) client._guildCache = new Map();
-
-              if (client._guildCache.has(guildId)) {
-              return client._guildCache.get(guildId);
-              }
-
-              const placeholder = { id: guildId, name: 'Fetching...' };
-
-              getGuild(guildId, client.token).then((guild) => {
-              client._guildCache.set(guildId, guild);
-              }).catch(console.error);
-
-              return placeholder;
-            }
-            };
-
+          const message = new Message(d, client);
           client.emit('messageCreate', message);
         }
         break;
@@ -84,4 +52,4 @@ function startGateway(token, intents, client) {
   });
 }
 
-module.exports = { startGateway };
+module.exports = { startGateway }
